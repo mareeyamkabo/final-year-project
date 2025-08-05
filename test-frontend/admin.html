@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard</title>
+  <style>
+    :root {
+      --primary-color: #4a90e2;
+      --accent-color: #2d3e50;
+      --background: #f9f9fc;
+      --white: #ffffff;
+      --danger: #e74c3c;
+      --success: #2ecc71;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--background);
+      margin: 0;
+      padding: 40px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      background: var(--white);
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--accent-color);
+      margin-bottom: 20px;
+    }
+
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    form input, form select {
+      flex: 1 1 200px;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-create {
+      background-color: var(--primary-color);
+      color: var(--white);
+    }
+
+    .btn-create:hover {
+      background-color: #3b78c2;
+    }
+
+    .btn-edit, .btn-toggle {
+      font-size: 14px;
+      margin-right: 5px;
+    }
+
+    .btn-edit {
+      background-color: var(--success);
+      color: var(--white);
+    }
+
+    .btn-toggle {
+      background-color: var(--accent-color);
+      color: var(--white);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+    }
+
+    th {
+      background-color: var(--primary-color);
+      color: var(--white);
+    }
+
+    .error {
+      color: var(--danger);
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Admin Dashboard</h1>
+    <div id="error" class="error"></div>
+
+    <form id="itemForm">
+      <input type="text" id="itemName" placeholder="Item Name" required />
+      <input type="text" id="itemDescription" placeholder="Description" required />
+      <input type="text" id="itemLocation" placeholder="Location" required />
+      <input type="date" id="itemDateLost" required />
+      <select id="itemType" required>
+        <option value="">-- Select Type --</option>
+        <option value="found">Found</option>
+        <option value="missing">Missing</option>
+      </select>
+      <select id="itemStatus" required>
+        <option value="">-- Select Status --</option>
+        <option value="pending">Pending</option>
+        <option value="approved">Approved</option>
+        <option value="resolved">Resolved</option>
+      </select>
+      <button type="submit" class="btn-create">Create Item</button>
+    </form>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Location</th>
+          <th>Date Lost</th>
+          <th>Status</th>
+          <th>Type</th>
+          <th>Uploader</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="itemsTable"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const token = localStorage.getItem("token");
+    if (!token) window.location.href = "login.html";
+
+    let editMode = false;
+    let editItemId = null;
+
+    async function fetchItems() {
+      const res = await fetch("http://localhost:5000/api/items", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const data = await res.json();
+      const tbody = document.getElementById("itemsTable");
+      tbody.innerHTML = "";
+
+      data.forEach(item => {
+        const uploader = item.User?.name || "N/A";
+        const date = item.dateLost ? new Date(item.dateLost).toLocaleDateString() : "N/A";
+        tbody.innerHTML += `
+          <tr>
+            <td>${item.id}</td>
+            <td>${item.name}</td>
+            <td>${item.description}</td>
+            <td>${item.location}</td>
+            <td>${date}</td>
+            <td>${item.status}</td>
+            <td>${item.type}</td>
+            <td>${uploader}</td>
+            <td>
+              <button class="btn-edit" onclick="loadEdit(${item.id}, '${item.name}', '${item.description}', '${item.location}', '${item.dateLost?.split('T')[0]}', '${item.type}', '${item.status}')">Edit</button>
+              <button class="btn-toggle" onclick="toggleStatus(${item.id}, '${item.status}')">${item.status}</button>
+            </td>
+          </tr>`;
+      });
+    }
+
+    function loadEdit(id, name, description, location, dateLost, type, status) {
+      editMode = true;
+      editItemId = id;
+      document.getElementById("itemName").value = name;
+      document.getElementById("itemDescription").value = description;
+      document.getElementById("itemLocation").value = location;
+      document.getElementById("itemDateLost").value = dateLost;
+      document.getElementById("itemType").value = type;
+      document.getElementById("itemStatus").value = status;
+      document.querySelector(".btn-create").innerText = "Update Item";
+    }
+
+    async function toggleStatus(id, currentStatus) {
+      const next = currentStatus === "pending" ? "approved" : currentStatus === "approved" ? "resolved" : "pending";
+      await fetch(`http://localhost:5000/api/items/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: next })
+      });
+      fetchItems();
+    }
+
+    document.getElementById("itemForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const payload = {
+        name: document.getElementById("itemName").value,
+        description: document.getElementById("itemDescription").value,
+        location: document.getElementById("itemLocation").value,
+        dateLost: document.getElementById("itemDateLost").value,
+        type: document.getElementById("itemType").value,
+        status: document.getElementById("itemStatus").value || "pending"
+      };
+
+      const url = editMode
+        ? `http://localhost:5000/api/items/${editItemId}`
+        : "http://localhost:5000/api/items";
+      const method = editMode ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        document.getElementById("error").innerText = err.message || "Something went wrong.";
+        return;
+      }
+
+      e.target.reset();
+      editMode = false;
+      editItemId = null;
+      document.querySelector(".btn-create").innerText = "Create Item";
+      fetchItems();
+    });
+
+    fetchItems();
+  </script>
+</body>
+</html>

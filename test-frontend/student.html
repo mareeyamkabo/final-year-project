@@ -1,0 +1,37 @@
+<!-- test-frontend/student.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Student Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Welcome Student</h1>
+  <div id="itemsList"></div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    fetch('http://localhost:3000/api/items', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    .then(res => res.json())
+    .then(items => {
+      const container = document.getElementById('itemsList');
+      if (items.length === 0) {
+        container.innerHTML = '<p>No items available yet.</p>';
+      } else {
+        container.innerHTML = items.map(item => `
+          <div style="border:1px solid #ccc; padding:10px; margin:5px;">
+            <strong>${item.name}</strong><br />
+            ${item.description}<br />
+            <em>Status: ${item.status}</em>
+          </div>
+        `).join('');
+      }
+    });
+  </script>
+</body>
+</html>

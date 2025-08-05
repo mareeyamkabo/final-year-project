@@ -1,17 +1,27 @@
+// server/server.js
+
 const express = require('express');
 const cors = require('cors');
-const morgan = require('morgan');
+const { sequelize } = require('./models');
 require('dotenv').config();
-const { syncDatabase } = require('./models');
 
 const app = express();
-app.use(cors());
+
+app.use(cors({
+  origin: ['http://127.0.0.1:5500'],
+  credentials: true
+}));
 app.use(express.json());
-app.use(morgan('dev'));
 
-app.use('/api', require('./routes/itemRoutes'));
+// ✅ Routes
+const authRoutes = require('./routes/authRoutes');
+const itemRoutes = require('./routes/itemRoutes'); // <--- now safe
 
-syncDatabase().then(() => {
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => console.log(` Server running on port ${PORT}`));
+app.use('/api/auth', authRoutes);
+app.use('/api/items', itemRoutes); // <--- now safe
+
+// ✅ Start server
+const PORT = process.env.PORT || 5000;
+sequelize.sync().then(() => {
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 });

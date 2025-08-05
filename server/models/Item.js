@@ -6,15 +6,30 @@ const Item = sequelize.define('Item', {
     type: DataTypes.STRING,
     allowNull: false
   },
-  description: DataTypes.TEXT,
-  location: DataTypes.STRING,
-  dateLost: DataTypes.DATE,
-  found: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: false
+  },
+  location: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  dateLost: {
+    type: DataTypes.DATE,
+    allowNull: false
+  },
+  type: {
+    type: DataTypes.ENUM('found', 'missing'),
+    allowNull: false
+  },
+  status: {
+    type: DataTypes.ENUM('pending', 'approved', 'resolved'),
+    defaultValue: 'pending'
+  },
+  uploaderId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
   }
-}, {
-  timestamps: true
 });
 
 module.exports = Item;

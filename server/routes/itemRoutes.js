@@ -1,17 +1,26 @@
+// server/routes/itemRoutes.js
+
 const express = require('express');
 const router = express.Router();
+
+// ✅ Import controllers
 const {
   createItem,
   getAllItems,
-  getItem,
   updateItem,
-  deleteItem
+  deleteItem,
 } = require('../controllers/itemController');
 
-router.post('/items', createItem);
-router.get('/items', getAllItems);
-router.get('/items/:id', getItem);
-router.put('/items/:id', updateItem);
-router.delete('/items/:id', deleteItem);
+// ✅ Import middleware
+const {
+  verifyToken,
+  requireRole,
+} = require('../middleware/authMiddleware'); // <- THIS IS THE MOST LIKELY CULPRIT
+
+// ✅ Routes
+router.get('/', verifyToken, getAllItems);
+router.post('/', verifyToken, createItem); 
+router.put('/:id', verifyToken, requireRole('admin'), updateItem);
+router.delete('/:id', verifyToken, requireRole('admin'), deleteItem);
 
 module.exports = router;
