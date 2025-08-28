@@ -1,9 +1,12 @@
+// server/models/index.js
 const sequelize = require('../config/db');
-const User = require('./User');
-const Item = require('./Item');
 
-// Relations
-User.hasMany(Item, { foreignKey: 'uploaderId' });
-Item.belongsTo(User, { foreignKey: 'uploaderId' });
+// Import model definitions
+const User = require('./User')(sequelize);
+const Item = require('./Item')(sequelize);
+
+// Define relations
+User.hasMany(Item, { as: 'items', foreignKey: 'uploaderId' });
+Item.belongsTo(User, { as: 'uploader', foreignKey: 'uploaderId' });
 
 module.exports = { sequelize, User, Item };

@@ -1,26 +1,16 @@
 // server/routes/itemRoutes.js
-
-const express = require('express');
+const express = require("express");
 const router = express.Router();
+const itemController = require("../controllers/itemController");
+const upload = require("../middleware/upload");
+const { verifyToken, isAdmin } = require("../middleware/authMiddleware");
 
-// ✅ Import controllers
-const {
-  createItem,
-  getAllItems,
-  updateItem,
-  deleteItem,
-} = require('../controllers/itemController');
+// Public routes
+router.get("/", itemController.getAllItems);
 
-// ✅ Import middleware
-const {
-  verifyToken,
-  requireRole,
-} = require('../middleware/authMiddleware'); // <- THIS IS THE MOST LIKELY CULPRIT
-
-// ✅ Routes
-router.get('/', verifyToken, getAllItems);
-router.post('/', verifyToken, createItem); 
-router.put('/:id', verifyToken, requireRole('admin'), updateItem);
-router.delete('/:id', verifyToken, requireRole('admin'), deleteItem);
+// Protected routes
+router.post("/", verifyToken, upload.single("image"), itemController.createItem);
+router.put("/:id", verifyToken, isAdmin, upload.single("image"), itemController.updateItem);
+router.delete("/:id", verifyToken, isAdmin, itemController.deleteItem);
 
 module.exports = router;

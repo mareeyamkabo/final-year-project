@@ -1,33 +1,45 @@
 // server/middleware/authMiddleware.js
+const jwt = require("jsonwebtoken");
 
-const jwt = require('jsonwebtoken');
-
-// ✅ Verify token middleware
+// Verify JWT and attach user info to request
 exports.verifyToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'No token provided' });
-  }
-
-  const token = authHeader.split(' ')[1];
-
   try {
-    const decoded = jwt.verify(token, 'your-secret-key'); // Replace with env var in prod
-    req.user = decoded;
-    next(); // Move to next middleware or controller
+    const authHeader = req.headers["authorization"];
+    if (!authHeader) {
+      console.warn("🚨 No Authorization header provided");
+      return res.status(403).json({ message: "No token provided" });
+    }
+
+    const token = authHeader.split(" ")[1]; // Expecting "Bearer <token>"
+    if (!token) {
+      console.warn("🚨 Malformed Authorization header:", authHeader);
+      return res.status(403).json({ message: "Token missing" });
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+      if (err) {
+        console.error("🚨 JWT verification failed:", err.message);
+        return res.status(401).json({ message: "Unauthorized - invalid token" });
+      }
+
+      // Attach decoded values for downstream use
+      req.userId = decoded.id;
+      req.userRole = decoded.role;
+
+      console.log(`✅ Authenticated request by user ${decoded.id} (${decoded.role})`);
+      next();
+    });
   } catch (err) {
-    return res.status(401).json({ message: 'Invalid token' });
+    console.error("🚨 Error in verifyToken:", err);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
-// middleware/authMiddleware.js
-exports.requireRole = (roles) => {
-  return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'Access denied: Insufficient permissions' });
-    }
-    next();
-  };
+// Check admin role
+exports.isAdmin = (req, res, next) => {
+  if (req.userRole !== "admin") {
+    console.warn(`🚨 Access denied for user ${req.userId} (${req.userRole})`);
+    return res.status(403).json({ message: "Require admin role" });
+  }
+  next();
 };
-

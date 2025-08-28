@@ -5,21 +5,29 @@
   <title>Admin Dashboard</title>
   <style>
     :root {
-      --primary-color: #4a90e2;
-      --accent-color: #2d3e50;
-      --background: #f9f9fc;
-      --white: #ffffff;
+      --primary: #4a90e2;
+      --dark: #1e1e2f;
+      --bg: #f4f7fb;
+      --white: rgba(255, 255, 255, 0.8);
       --danger: #e74c3c;
-      --success: #2ecc71;
+      --success: #27ae60;
       --warning: #f39c12;
       --info: #3498db;
+      --gray: rgba(255,255,255,0.3);
     }
 
     body {
       font-family: 'Segoe UI', sans-serif;
-      background-color: var(--background);
+      background: linear-gradient(135deg, #e0eafc, #cfdef3);
       margin: 0;
       padding: 40px;
+      color: var(--dark);
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    body.dark {
+      background: linear-gradient(135deg, #141E30, #243B55);
+      color: var(--white);
     }
 
     .container {
@@ -27,139 +35,175 @@
       margin: auto;
       background: var(--white);
       padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      border-radius: 20px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+      backdrop-filter: blur(12px);
+      transition: background 0.3s ease;
+    }
+
+    body.dark .container {
+      background: rgba(40, 44, 52, 0.7);
+    }
+
+    h1, h2 {
+      text-align: center;
+      margin: 0;
     }
 
     h1 {
-      text-align: center;
-      color: var(--accent-color);
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    h2 {
+      font-size: 16px;
+      color: var(--primary);
       margin-bottom: 20px;
     }
 
-    form {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      margin-bottom: 30px;
+    .dark h2 {
+      color: #9ecbff;
     }
 
-    form input, form select {
-      flex: 1 1 200px;
-      padding: 12px;
-      font-size: 16px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 25px;
+      justify-content: center;
+    }
+
+    .toolbar input,
+    .toolbar select,
+    .toolbar button {
+      padding: 10px 16px;
+      font-size: 14px;
+      border-radius: 50px;
+      border: 1px solid var(--gray);
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(8px);
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    body.dark .toolbar input,
+    body.dark .toolbar select {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.2);
     }
 
     button {
-      padding: 10px 16px;
-      font-size: 14px;
       border: none;
-      border-radius: 6px;
       cursor: pointer;
+      color: #fff;
+      font-weight: 500;
+      transition: transform 0.2s;
     }
 
-    .btn-create {
-      background-color: var(--primary-color);
-      color: var(--white);
+    button:hover {
+      transform: scale(1.05);
     }
 
-    .btn-create:hover {
-      background-color: #3b78c2;
-    }
-
-    .btn-edit, .btn-toggle, .btn-delete {
-      font-size: 13px;
-      margin-right: 5px;
-    }
-
-    .btn-edit {
-      background-color: var(--success);
-      color: var(--white);
-    }
-
-    .btn-toggle {
-      background-color: var(--info);
-      color: var(--white);
-    }
-
-    .btn-delete {
-      background-color: var(--danger);
-      color: var(--white);
-    }
-
-    .btn-delete:hover {
-      background-color: #c0392b;
-    }
+    .btn-create { background: var(--primary); }
+    .btn-edit { background: var(--success); }
+    .btn-toggle { background: var(--info); }
+    .btn-delete { background: var(--danger); }
+    .btn-darkmode { background: #6c5ce7; }
 
     table {
       width: 100%;
       border-collapse: collapse;
+      border-radius: 12px;
+      overflow: hidden;
     }
 
     th, td {
-      padding: 15px;
-      border-bottom: 1px solid #eee;
-      text-align: left;
+      padding: 14px;
+      text-align: center;
+      font-size: 14px;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
     }
 
     th {
-      background-color: var(--primary-color);
-      color: var(--white);
+      background: var(--primary);
+      color: #fff;
     }
 
-    table tr:hover {
-      background-color: #f1f7ff;
+    tr:hover { background: rgba(74,144,226,0.05); }
+
+    body.dark tr:hover {
+      background: rgba(255,255,255,0.05);
     }
 
     .badge {
-      padding: 4px 10px;
-      border-radius: 12px;
+      padding: 6px 14px;
+      border-radius: 50px;
       font-size: 12px;
       font-weight: bold;
-      color: var(--white);
       text-transform: capitalize;
+      color: #fff;
     }
 
-    .badge.pending { background-color: var(--warning); }
-    .badge.approved { background-color: var(--success); }
-    .badge.resolved { background-color: var(--info); }
+    .badge.pending { background: var(--warning); }
+    .badge.approved { background: var(--success); }
+    .badge.resolved { background: var(--info); }
+
+    img.item-image {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: 12px;
+      border: 2px solid var(--gray);
+    }
+
+    .action-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+    }
 
     .error {
       color: var(--danger);
-      margin-bottom: 20px;
+      margin-bottom: 15px;
+      text-align: center;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Admin Dashboard</h1>
+    <h1>Welcome to Lost & Found System</h1>
+    <h2>Admin Dashboard - FUD</h2>
     <div id="error" class="error"></div>
 
-    <form id="itemForm">
+    <!-- Toolbar for adding/editing items -->
+    <form id="itemForm" enctype="multipart/form-data" class="toolbar">
       <input type="text" id="itemName" placeholder="Item Name" required />
       <input type="text" id="itemDescription" placeholder="Description" required />
       <input type="text" id="itemLocation" placeholder="Location" required />
       <input type="date" id="itemDateLost" required />
       <select id="itemType" required>
-        <option value="">-- Select Type --</option>
+        <option value="">Type</option>
         <option value="found">Found</option>
         <option value="missing">Missing</option>
       </select>
       <select id="itemStatus" required>
-        <option value="">-- Select Status --</option>
+        <option value="">Status</option>
         <option value="pending">Pending</option>
         <option value="approved">Approved</option>
         <option value="resolved">Resolved</option>
       </select>
-      <button type="submit" class="btn-create">Create Item</button>
+      <input type="file" id="itemImage" accept="image/*" />
+      <button type="submit" class="btn-create">Create</button>
+      <button type="button" class="btn-darkmode" onclick="toggleDarkMode()">🌙</button>
     </form>
 
     <table>
       <thead>
         <tr>
           <th>ID</th>
+          <th>Image</th>
           <th>Name</th>
           <th>Description</th>
           <th>Location</th>
@@ -175,6 +219,10 @@
   </div>
 
   <script>
+    function toggleDarkMode() {
+      document.body.classList.toggle("dark");
+    }
+
     const token = localStorage.getItem("token");
     if (!token) window.location.href = "login.html";
 
@@ -185,18 +233,20 @@
       const res = await fetch("http://localhost:5000/api/items", {
         headers: { Authorization: `Bearer ${token}` }
       });
-
       const data = await res.json();
       const tbody = document.getElementById("itemsTable");
       tbody.innerHTML = "";
-
       data.forEach(item => {
         const uploader = item.User?.name || "N/A";
         const date = item.dateLost ? new Date(item.dateLost).toLocaleDateString() : "N/A";
+        const imageHtml = item.image 
+          ? `<img src="http://localhost:5000/uploads/${item.image}" class="item-image" />`
+          : "No Image";
 
         tbody.innerHTML += `
           <tr>
             <td>${item.id}</td>
+            <td>${imageHtml}</td>
             <td>${item.name}</td>
             <td>${item.description}</td>
             <td>${item.location}</td>
@@ -205,9 +255,11 @@
             <td>${item.type}</td>
             <td>${uploader}</td>
             <td>
-              <button class="btn-edit" onclick="loadEdit(${item.id}, '${item.name}', '${item.description}', '${item.location}', '${item.dateLost?.split('T')[0]}', '${item.type}', '${item.status}')">Edit</button>
-              <button class="btn-toggle" onclick="toggleStatus(${item.id}, '${item.status}')">${item.status}</button>
-              <button class="btn-delete" onclick="deleteItem(${item.id})">Delete</button>
+              <div class="action-buttons">
+                <button class="btn-edit" onclick="loadEdit(${item.id}, '${item.name}', '${item.description}', '${item.location}', '${item.dateLost?.split('T')[0]}', '${item.type}', '${item.status}')">Edit</button>
+                <button class="btn-toggle" onclick="toggleStatus(${item.id}, '${item.status}')">Toggle</button>
+                <button class="btn-delete" onclick="deleteItem(${item.id})">Delete</button>
+              </div>
             </td>
           </tr>`;
       });
@@ -222,17 +274,14 @@
       document.getElementById("itemDateLost").value = dateLost;
       document.getElementById("itemType").value = type;
       document.getElementById("itemStatus").value = status;
-      document.querySelector(".btn-create").innerText = "Update Item";
+      document.querySelector(".btn-create").innerText = "Update";
     }
 
     async function toggleStatus(id, currentStatus) {
       const next = currentStatus === "pending" ? "approved" : currentStatus === "approved" ? "resolved" : "pending";
       await fetch(`http://localhost:5000/api/items/${id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status: next })
       });
       fetchItems();
@@ -240,59 +289,46 @@
 
     async function deleteItem(id) {
       if (!confirm("Are you sure you want to delete this item?")) return;
-
       const res = await fetch(`http://localhost:5000/api/items/${id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
       });
-
       if (!res.ok) {
         const err = await res.json();
         document.getElementById("error").innerText = err.message || "Failed to delete item.";
         return;
       }
-
       fetchItems();
     }
 
     document.getElementById("itemForm").addEventListener("submit", async function (e) {
       e.preventDefault();
+      const formData = new FormData();
+      formData.append("name", document.getElementById("itemName").value);
+      formData.append("description", document.getElementById("itemDescription").value);
+      formData.append("location", document.getElementById("itemLocation").value);
+      formData.append("dateLost", document.getElementById("itemDateLost").value);
+      formData.append("type", document.getElementById("itemType").value);
+      formData.append("status", document.getElementById("itemStatus").value || "pending");
 
-      const payload = {
-        name: document.getElementById("itemName").value,
-        description: document.getElementById("itemDescription").value,
-        location: document.getElementById("itemLocation").value,
-        dateLost: document.getElementById("itemDateLost").value,
-        type: document.getElementById("itemType").value,
-        status: document.getElementById("itemStatus").value || "pending"
-      };
+      const fileInput = document.getElementById("itemImage");
+      if (fileInput.files.length > 0) formData.append("image", fileInput.files[0]);
 
       const url = editMode
         ? `http://localhost:5000/api/items/${editItemId}`
         : "http://localhost:5000/api/items";
       const method = editMode ? "PUT" : "POST";
 
-      const res = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-
+      const res = await fetch(url, { method, headers: { Authorization: `Bearer ${token}` }, body: formData });
       if (!res.ok) {
         const err = await res.json();
         document.getElementById("error").innerText = err.message || "Something went wrong.";
         return;
       }
-
       e.target.reset();
       editMode = false;
       editItemId = null;
-      document.querySelector(".btn-create").innerText = "Create Item";
+      document.querySelector(".btn-create").innerText = "Create";
       fetchItems();
     });
 

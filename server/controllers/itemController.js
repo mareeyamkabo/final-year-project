@@ -1,19 +1,17 @@
 // server/controllers/itemController.js
+const { Item, User } = require("../models");
 
-const { Item, User } = require('../models');
-
-/**
- * Create a new lost/found item
- * Requires authentication (verifyToken)
- * uploaderId is taken from req.user.id (logged-in user)
- */
+// =============================
+// Create new item
+// =============================
 exports.createItem = async (req, res) => {
   try {
     const { name, description, location, dateLost, type, status } = req.body;
+    const image = req.file ? req.file.filename : null;
 
-    // Validate required fields
-    if (!name || !description || !location || !dateLost || !type) {
-      return res.status(400).json({ error: 'Please fill in all required fields' });
+    if (!req.userId) {
+      console.error("🚨 Missing userId in request");
+      return res.status(401).json({ message: "Unauthorized - no user info" });
     }
 
     const newItem = await Item.create({
@@ -22,80 +20,86 @@ exports.createItem = async (req, res) => {
       location,
       dateLost,
       type,
-      status: status || 'pending', // Default status if not provided
-      uploaderId: req.user.id // ✅ comes from verifyToken
+      status: status || "pending",
+      image,
+      uploaderId: req.userId,
     });
 
+    console.log(`✅ Item created by user ${req.userId}`);
     res.status(201).json(newItem);
-  } catch (error) {
-    console.error('Error creating item:', error);
-    res.status(500).json({ error: 'Failed to create item' });
+  } catch (err) {
+    console.error("❌ Error creating item:", err);
+    res.status(500).json({ message: "Error creating item" });
   }
 };
 
-/**
- * Get all items (admin & authenticated users)
- * Includes uploader details
- */
+// =============================
+// Get all items
+// =============================
 exports.getAllItems = async (req, res) => {
   try {
     const items = await Item.findAll({
       include: [
         {
           model: User,
-          attributes: ['id', 'name', 'email', 'role']
-        }
+          as: "uploader",
+          attributes: ["id", "name", "email", "role"],
+        },
       ],
-      order: [['createdAt', 'DESC']]
+      order: [["createdAt", "DESC"]],
     });
 
     res.json(items);
-  } catch (error) {
-    console.error('Error fetching items:', error);
-    res.status(500).json({ message: 'Server error while fetching items' });
+  } catch (err) {
+    console.error("❌ Error fetching items:", err);
+    res.status(500).json({ message: "Error fetching items" });
   }
 };
 
-/**
- * Update an item (admin only)
- * Can be used to change details or status
- */
+// =============================
+// Update item (admin only)
+// =============================
 exports.updateItem = async (req, res) => {
   try {
-    const item = await Item.findByPk(req.params.id);
-    if (!item) return res.status(404).json({ message: 'Item not found' });
+    const { id } = req.params;
+    const item = await Item.findByPk(id);
 
-    // Merge updates (only provided fields will be updated)
-    const updates = {
-      name: req.body.name ?? item.name,
-      description: req.body.description ?? item.description,
-      location: req.body.location ?? item.location,
-      dateLost: req.body.dateLost ?? item.dateLost,
-      type: req.body.type ?? item.type,
-      status: req.body.status ?? item.status
-    };
+    if (!item) {
+      console.warn(`🚨 Update failed: Item ${id} not found`);
+      return res.status(404).json({ message: "Item not found" });
+    }
 
-    await item.update(updates);
+    if (req.file) req.body.image = req.file.filename;
 
+    await item.update(req.body);
+
+    console.log(`✅ Item ${id} updated by admin ${req.userId}`);
     res.json(item);
-  } catch (error) {
-    console.error('Error updating item:', error);
-    res.status(500).json({ error: 'Failed to update item' });
+  } catch (err) {
+    console.error("❌ Error updating item:", err);
+    res.status(500).json({ message: "Error updating item" });
   }
 };
 
-/**
- * Delete an item (admin only)
- */
+// =============================
+// Delete item (admin only)
+// =============================
 exports.deleteItem = async (req, res) => {
   try {
-    const item = await Item.findByPk(req.params.id);
-    if (!item) return res.status(404).json({ message: 'Item not found' });
+    const { id } = req.params;
+    const item = await Item.findByPk(id);
+
+    if (!item) {
+      console.warn(`🚨 Delete failed: Item ${id} not found`);
+      return res.status(404).json({ message: "Item not found" });
+    }
 
     await item.destroy();
-    res.json({ message: 'Item deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting item:', error);
-    res.status(500).json({ error: 'Failed to delete item' });
+
+    console.log(`✅ Item ${id} deleted by admin ${req.userId}`);
+    res.json({ message: "Item deleted successfully" });
+  } catch (err) {
+    console.error("❌ Error deleting item:", err);
+    res.status(500).json({ message: "Error deleting item" });
   }
 };
