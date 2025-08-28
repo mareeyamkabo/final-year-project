@@ -1,3 +1,4 @@
+// server/db.js
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
@@ -8,8 +9,16 @@ const sequelize = new Sequelize(
   {
     host: process.env.DB_HOST,
     dialect: process.env.DB_DIALECT,
-    logging: false,
-  }
+    logging: console.log, 
 );
+
+// ✅ Test the connection immediately
+sequelize.authenticate()
+  .then(() => {
+    console.log('✅ MySQL connected successfully.');
+  })
+  .catch(err => {
+    console.error('❌ MySQL connection failed:', err.message);
+  });
 
 module.exports = sequelize;
