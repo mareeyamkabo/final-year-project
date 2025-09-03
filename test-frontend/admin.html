@@ -22,7 +22,6 @@
       margin: 0;
       padding: 40px;
       color: var(--dark);
-      transition: background 0.3s ease, color 0.3s ease;
     }
 
     body.dark {
@@ -38,7 +37,6 @@
       border-radius: 20px;
       box-shadow: 0 8px 30px rgba(0,0,0,0.15);
       backdrop-filter: blur(12px);
-      transition: background 0.3s ease;
     }
 
     body.dark .container {
@@ -132,10 +130,7 @@
     }
 
     tr:hover { background: rgba(74,144,226,0.05); }
-
-    body.dark tr:hover {
-      background: rgba(255,255,255,0.05);
-    }
+    body.dark tr:hover { background: rgba(255,255,255,0.05); }
 
     .badge {
       padding: 6px 14px;
@@ -156,6 +151,7 @@
       object-fit: cover;
       border-radius: 12px;
       border: 2px solid var(--gray);
+      cursor: pointer;
     }
 
     .action-buttons {
@@ -169,6 +165,65 @@
       margin-bottom: 15px;
       text-align: center;
     }
+
+    /* --- Custom Modal --- */
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+    }
+    .modal.hidden { display: none; }
+    .modal-content {
+      background: var(--white);
+      padding: 20px 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+    }
+    body.dark .modal-content {
+      background: rgba(40,44,52,0.9);
+      color: #fff;
+    }
+    .modal-actions {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+    }
+    .btn-confirm {
+      background: var(--success);
+      padding: 8px 20px;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+    }
+    .btn-cancel {
+      background: var(--danger);
+      padding: 8px 20px;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+    }
+
+    /* Full image modal override */
+    #imageModal .modal-content {
+      background: none;
+      box-shadow: none;
+    }
+    #imageModal img {
+      max-width: 100%;
+      max-height: 80vh;
+      border-radius: 12px;
+    }
   </style>
 </head>
 <body>
@@ -177,7 +232,6 @@
     <h2>Admin Dashboard - FUD</h2>
     <div id="error" class="error"></div>
 
-    <!-- Toolbar for adding/editing items -->
     <form id="itemForm" enctype="multipart/form-data" class="toolbar">
       <input type="text" id="itemName" placeholder="Item Name" required />
       <input type="text" id="itemDescription" placeholder="Description" required />
@@ -202,32 +256,71 @@
     <table>
       <thead>
         <tr>
-          <th>ID</th>
-          <th>Image</th>
-          <th>Name</th>
-          <th>Description</th>
-          <th>Location</th>
-          <th>Date Lost</th>
-          <th>Status</th>
-          <th>Type</th>
-          <th>Uploader</th>
-          <th>Actions</th>
+          <th>ID</th><th>Image</th><th>Name</th><th>Description</th>
+          <th>Location</th><th>Date Lost</th><th>Status</th><th>Type</th>
+          <th>Uploader</th><th>Actions</th>
         </tr>
       </thead>
       <tbody id="itemsTable"></tbody>
     </table>
   </div>
 
+  <!-- Confirmation Modal -->
+  <div id="confirmModal" class="modal hidden">
+    <div class="modal-content">
+      <p id="confirmMessage">Are you sure?</p>
+      <div class="modal-actions">
+        <button id="confirmYes" class="btn-confirm">Yes</button>
+        <button id="confirmNo" class="btn-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Viewer Modal -->
+  <div id="imageModal" class="modal hidden">
+    <div class="modal-content" style="max-width:90%; max-height:90%; padding:0; background:none; box-shadow:none;">
+      <img id="fullImage" src="" alt="Full Item" />
+      <div style="text-align:center; margin-top:10px;">
+        <button onclick="closeImage()" class="btn-cancel">Close</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    function toggleDarkMode() {
-      document.body.classList.toggle("dark");
-    }
+    function toggleDarkMode() { document.body.classList.toggle("dark"); }
 
     const token = localStorage.getItem("token");
     if (!token) window.location.href = "login.html";
 
     let editMode = false;
     let editItemId = null;
+
+    // Custom confirmation modal
+    function customConfirm(message) {
+      return new Promise((resolve) => {
+        const modal = document.getElementById("confirmModal");
+        const msg = document.getElementById("confirmMessage");
+        const yesBtn = document.getElementById("confirmYes");
+        const noBtn = document.getElementById("confirmNo");
+
+        msg.innerText = message;
+        modal.classList.remove("hidden");
+
+        yesBtn.onclick = () => { modal.classList.add("hidden"); resolve(true); };
+        noBtn.onclick = () => { modal.classList.add("hidden"); resolve(false); };
+      });
+    }
+
+    function showImage(src) {
+      const modal = document.getElementById("imageModal");
+      const fullImage = document.getElementById("fullImage");
+      fullImage.src = src;
+      modal.classList.remove("hidden");
+    }
+
+    function closeImage() {
+      document.getElementById("imageModal").classList.add("hidden");
+    }
 
     async function fetchItems() {
       const res = await fetch("http://localhost:5000/api/items", {
@@ -239,8 +332,9 @@
       data.forEach(item => {
         const uploader = item.User?.name || "N/A";
         const date = item.dateLost ? new Date(item.dateLost).toLocaleDateString() : "N/A";
-        const imageHtml = item.image 
-          ? `<img src="http://localhost:5000/uploads/${item.image}" class="item-image" />`
+        const imageUrl = item.image ? `http://localhost:5000/uploads/${item.image}` : null;
+        const imageHtml = imageUrl
+          ? `<img src="${imageUrl}" class="item-image" onclick="showImage('${imageUrl}')" />`
           : "No Image";
 
         tbody.innerHTML += `
@@ -278,17 +372,34 @@
     }
 
     async function toggleStatus(id, currentStatus) {
-      const next = currentStatus === "pending" ? "approved" : currentStatus === "approved" ? "resolved" : "pending";
-      await fetch(`http://localhost:5000/api/items/${id}`, {
+      const next = currentStatus === "pending"
+        ? "approved"
+        : currentStatus === "approved"
+          ? "resolved"
+          : "pending";
+
+      const confirmed = await customConfirm(
+        `⚠️ Change status from "${currentStatus}" to "${next}"?`
+      );
+      if (!confirmed) return;
+
+      const res = await fetch(`http://localhost:5000/api/items/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status: next })
       });
+      if (!res.ok) {
+        const err = await res.json();
+        document.getElementById("error").innerText = err.message || "Failed to update status.";
+        return;
+      }
       fetchItems();
     }
 
     async function deleteItem(id) {
-      if (!confirm("Are you sure you want to delete this item?")) return;
+      const confirmed = await customConfirm("❌ Are you sure you want to DELETE this item?");
+      if (!confirmed) return;
+
       const res = await fetch(`http://localhost:5000/api/items/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
