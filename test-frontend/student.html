@@ -1,37 +1,228 @@
-<!-- test-frontend/student.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Student Dashboard</title>
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    :root {
+      --primary: #4a90e2;
+      --dark: #1e1e2f;
+      --bg: #f4f7fb;
+      --white: rgba(255, 255, 255, 0.8);
+      --danger: #e74c3c;
+      --success: #27ae60;
+      --warning: #f39c12;
+      --info: #3498db;
+      --gray: rgba(255,255,255,0.3);
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #e0eafc, #cfdef3);
+      margin: 0;
+      padding: 20px;
+      color: var(--dark);
+    }
+
+    body.dark {
+      background: linear-gradient(135deg, #141E30, #243B55);
+      color: var(--white);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+
+    .toolbar input, .toolbar select, .toolbar button {
+      padding: 10px 14px;
+      border-radius: 50px;
+      border: 1px solid var(--gray);
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(6px);
+    }
+
+    .btn-submit { background: var(--primary); color: #fff; border: none; }
+    .btn-darkmode { background: #6c5ce7; color: #fff; border: none; }
+
+    .items-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--white);
+      padding: 15px;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+
+    .card:hover { transform: translateY(-5px); }
+    body.dark .card { background: rgba(40,44,52,0.7); }
+
+    .card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 50px;
+      font-size: 12px;
+      color: #fff;
+      margin-top: 6px;
+    }
+    .badge.pending { background: var(--warning); }
+    .badge.approved { background: var(--success); }
+    .badge.resolved { background: var(--info); }
+
+    /* Image Modal */
+    .modal {
+      position: fixed;
+      top:0;left:0;
+      width:100%;height:100%;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      background:rgba(0,0,0,0.7);
+      z-index:1000;
+    }
+    .modal.hidden { display:none; }
+    .modal img {
+      max-width:90%;
+      max-height:85vh;
+      border-radius:12px;
+      box-shadow:0 8px 25px rgba(0,0,0,0.3);
+    }
+    .modal button {
+      margin-top:10px;
+      padding:6px 16px;
+      border-radius:8px;
+      border:none;
+      background:var(--danger);
+      color:#fff;
+      cursor:pointer;
+    }
+  </style>
 </head>
 <body>
-  <h1>Welcome Student</h1>
-  <div id="itemsList"></div>
+  <h1>🎓 Student Dashboard</h1>
+
+  <!-- Toolbar to submit item -->
+  <form id="itemForm" enctype="multipart/form-data" class="toolbar">
+    <input type="text" id="itemName" placeholder="Item Name" required />
+    <input type="text" id="itemDescription" placeholder="Description" required />
+    <input type="text" id="itemLocation" placeholder="Location" required />
+    <input type="date" id="itemDateLost" required />
+    <select id="itemType" required>
+      <option value="">Type</option>
+      <option value="found">Found</option>
+      <option value="missing">Missing</option>
+    </select>
+    <input type="file" id="itemImage" accept="image/*" />
+    <button type="submit" class="btn-submit">Submit</button>
+    <button type="button" class="btn-darkmode" onclick="toggleDarkMode()">🌙</button>
+  </form>
+
+  <!-- Items grid -->
+  <div class="items-container" id="itemsList"></div>
+
+  <!-- Image Modal -->
+  <div id="imageModal" class="modal hidden">
+    <div style="text-align:center">
+      <img id="fullImage" src="" alt="Full Item" />
+      <br>
+      <button onclick="closeImage()">Close</button>
+    </div>
+  </div>
 
   <script>
-    const token = localStorage.getItem('token');
-    fetch('http://localhost:3000/api/items', {
-      headers: {
-        Authorization: `Bearer ${token}`
+    function toggleDarkMode() { document.body.classList.toggle("dark"); }
+
+    const token = localStorage.getItem("token");
+    if (!token) window.location.href = "login.html";
+
+    function showImage(src) {
+      document.getElementById("fullImage").src = src;
+      document.getElementById("imageModal").classList.remove("hidden");
+    }
+    function closeImage() {
+      document.getElementById("imageModal").classList.add("hidden");
+    }
+
+    async function fetchItems() {
+      const res = await fetch("http://localhost:5000/api/items", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const items = await res.json();
+      const container = document.getElementById("itemsList");
+      container.innerHTML = "";
+
+      if (!Array.isArray(items) || items.length === 0) {
+        container.innerHTML = "<p>No items available yet.</p>";
+        return;
       }
-    })
-    .then(res => res.json())
-    .then(items => {
-      const container = document.getElementById('itemsList');
-      if (items.length === 0) {
-        container.innerHTML = '<p>No items available yet.</p>';
-      } else {
-        container.innerHTML = items.map(item => `
-          <div style="border:1px solid #ccc; padding:10px; margin:5px;">
-            <strong>${item.name}</strong><br />
-            ${item.description}<br />
-            <em>Status: ${item.status}</em>
-          </div>
-        `).join('');
+
+      items.forEach(item => {
+        const imageHtml = item.image 
+          ? `<img src="http://localhost:5000/uploads/${item.image}" onclick="showImage('http://localhost:5000/uploads/${item.image}')"/>`
+          : "<div style='height:180px; display:flex; align-items:center; justify-content:center; background:#eee; border-radius:12px;'>No Image</div>";
+
+        container.innerHTML += `
+          <div class="card">
+            ${imageHtml}
+            <h3>${item.name}</h3>
+            <p>${item.description}</p>
+            <p><strong>Location:</strong> ${item.location}</p>
+            <p><strong>Date:</strong> ${item.dateLost ? new Date(item.dateLost).toLocaleDateString() : "N/A"}</p>
+            <span class="badge ${item.status}">${item.status}</span>
+            <p><em>Type: ${item.type}</em></p>
+          </div>`;
+      });
+    }
+
+    document.getElementById("itemForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const formData = new FormData();
+      formData.append("name", document.getElementById("itemName").value);
+      formData.append("description", document.getElementById("itemDescription").value);
+      formData.append("location", document.getElementById("itemLocation").value);
+      formData.append("dateLost", document.getElementById("itemDateLost").value);
+      formData.append("type", document.getElementById("itemType").value);
+      if (document.getElementById("itemImage").files.length > 0) {
+        formData.append("image", document.getElementById("itemImage").files[0]);
       }
+
+      const res = await fetch("http://localhost:5000/api/items", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+
+      if (!res.ok) {
+        alert("❌ Failed to submit item.");
+        return;
+      }
+
+      e.target.reset();
+      fetchItems();
     });
+
+    fetchItems();
   </script>
 </body>
 </html>
