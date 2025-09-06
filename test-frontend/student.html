@@ -6,83 +6,128 @@
   <style>
     :root {
       --primary: #4a90e2;
-      --dark: #1e1e2f;
-      --bg: #f4f7fb;
-      --white: rgba(255, 255, 255, 0.8);
-      --danger: #e74c3c;
       --success: #27ae60;
       --warning: #f39c12;
       --info: #3498db;
-      --gray: rgba(255,255,255,0.3);
+      --danger: #e74c3c;
+      --bg: #f4f7fb;
+      --white: rgba(255,255,255,0.95);
+      --dark: #1e1e2f;
     }
 
     body {
       font-family: 'Segoe UI', sans-serif;
       background: linear-gradient(135deg, #e0eafc, #cfdef3);
       margin: 0;
-      padding: 20px;
+      padding: 40px;
       color: var(--dark);
     }
 
-    body.dark {
-      background: linear-gradient(135deg, #141E30, #243B55);
-      color: var(--white);
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      background: var(--white);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+      backdrop-filter: blur(12px);
     }
 
     h1 {
       text-align: center;
       margin-bottom: 20px;
+      font-size: 28px;
     }
 
-    .toolbar {
+    form {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 12px;
+      margin-bottom: 25px;
       justify-content: center;
-      margin-bottom: 30px;
     }
 
-    .toolbar input, .toolbar select, .toolbar button {
+    form input, form textarea, form select, form button {
       padding: 10px 14px;
-      border-radius: 50px;
-      border: 1px solid var(--gray);
-      background: rgba(255,255,255,0.7);
-      backdrop-filter: blur(6px);
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      font-size: 14px;
+      flex: 1;
+      min-width: 180px;
     }
 
-    .btn-submit { background: var(--primary); color: #fff; border: none; }
-    .btn-darkmode { background: #6c5ce7; color: #fff; border: none; }
+    form button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      flex: none;
+    }
 
-    .items-container {
+    form button:hover {
+      background: #357abd;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+
+    .tab-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 30px;
+      background: #ddd;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Grid layout */
+    .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
       gap: 20px;
     }
 
-    .card {
-      background: var(--white);
-      padding: 15px;
+    .item-card {
+      background: #fff;
       border-radius: 16px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      padding: 15px;
+      text-align: center;
       transition: transform 0.2s;
     }
+    .item-card:hover {
+      transform: translateY(-3px);
+    }
 
-    .card:hover { transform: translateY(-5px); }
-    body.dark .card { background: rgba(40,44,52,0.7); }
-
-    .card img {
+    .item-card img {
       width: 100%;
-      height: 180px;
+      height: 160px;
       object-fit: cover;
       border-radius: 12px;
-      cursor: pointer;
+      margin-bottom: 10px;
     }
 
     .badge {
       display: inline-block;
-      padding: 5px 12px;
+      padding: 6px 14px;
       border-radius: 50px;
       font-size: 12px;
+      font-weight: bold;
+      text-transform: capitalize;
       color: #fff;
       margin-top: 6px;
     }
@@ -90,78 +135,69 @@
     .badge.approved { background: var(--success); }
     .badge.resolved { background: var(--info); }
 
-    /* Image Modal */
-    .modal {
-      position: fixed;
-      top:0;left:0;
-      width:100%;height:100%;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      background:rgba(0,0,0,0.7);
-      z-index:1000;
-    }
-    .modal.hidden { display:none; }
-    .modal img {
-      max-width:90%;
-      max-height:85vh;
-      border-radius:12px;
-      box-shadow:0 8px 25px rgba(0,0,0,0.3);
-    }
-    .modal button {
-      margin-top:10px;
-      padding:6px 16px;
-      border-radius:8px;
-      border:none;
-      background:var(--danger);
-      color:#fff;
-      cursor:pointer;
+    .error {
+      color: var(--danger);
+      text-align: center;
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
-  <h1>🎓 Student Dashboard</h1>
+  <div class="container">
+    <h1>🎓 Student Dashboard</h1>
+    <div id="error" class="error"></div>
 
-  <!-- Toolbar to submit item -->
-  <form id="itemForm" enctype="multipart/form-data" class="toolbar">
-    <input type="text" id="itemName" placeholder="Item Name" required />
-    <input type="text" id="itemDescription" placeholder="Description" required />
-    <input type="text" id="itemLocation" placeholder="Location" required />
-    <input type="date" id="itemDateLost" required />
-    <select id="itemType" required>
-      <option value="">Type</option>
-      <option value="found">Found</option>
-      <option value="missing">Missing</option>
-    </select>
-    <input type="file" id="itemImage" accept="image/*" />
-    <button type="submit" class="btn-submit">Submit</button>
-    <button type="button" class="btn-darkmode" onclick="toggleDarkMode()">🌙</button>
-  </form>
+    <!-- Upload Form -->
+    <form id="itemForm" enctype="multipart/form-data">
+      <input type="text" id="itemName" placeholder="Item Name" required />
+      <textarea id="itemDescription" placeholder="Description" required></textarea>
+      <input type="text" id="itemLocation" placeholder="Location" required />
+      <input type="date" id="itemDateLost" required />
+      <select id="itemType" required>
+        <option value="">Type</option>
+        <option value="found">Found</option>
+        <option value="missing">Missing</option>
+      </select>
+      <input type="file" id="itemImage" accept="image/*" />
+      <button type="submit">Upload Item</button>
+    </form>
 
-  <!-- Items grid -->
-  <div class="items-container" id="itemsList"></div>
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('public')">📌 Public Items</button>
+      <button class="tab-btn" onclick="showTab('my')">📂 My Submissions</button>
+    </div>
 
-  <!-- Image Modal -->
-  <div id="imageModal" class="modal hidden">
-    <div style="text-align:center">
-      <img id="fullImage" src="" alt="Full Item" />
-      <br>
-      <button onclick="closeImage()">Close</button>
+    <!-- Tab Content -->
+    <div id="public" class="tab-content active">
+      <div class="grid" id="publicList"></div>
+    </div>
+
+    <div id="my" class="tab-content">
+      <div class="grid" id="myList"></div>
     </div>
   </div>
 
   <script>
-    function toggleDarkMode() { document.body.classList.toggle("dark"); }
-
     const token = localStorage.getItem("token");
     if (!token) window.location.href = "login.html";
+    let currentUserId = null;
 
-    function showImage(src) {
-      document.getElementById("fullImage").src = src;
-      document.getElementById("imageModal").classList.remove("hidden");
+    function showTab(tab) {
+      document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      document.querySelector(`.tab-btn[onclick="showTab('${tab}')"]`).classList.add("active");
+      document.getElementById(tab).classList.add("active");
     }
-    function closeImage() {
-      document.getElementById("imageModal").classList.add("hidden");
+
+    async function getUserInfo() {
+      const res = await fetch("http://localhost:5000/api/auth/me", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const user = await res.json();
+        currentUserId = user.id;
+      }
     }
 
     async function fetchItems() {
@@ -169,33 +205,35 @@
         headers: { Authorization: `Bearer ${token}` }
       });
       const items = await res.json();
-      const container = document.getElementById("itemsList");
-      container.innerHTML = "";
 
-      if (!Array.isArray(items) || items.length === 0) {
-        container.innerHTML = "<p>No items available yet.</p>";
-        return;
-      }
+      // Public items (approved + resolved)
+      const publicItems = items.filter(i => i.status === "approved" || i.status === "resolved");
+      const publicContainer = document.getElementById("publicList");
+      publicContainer.innerHTML = publicItems.length === 0
+        ? "<p>No public items available.</p>"
+        : publicItems.map(renderItem).join("");
 
-      items.forEach(item => {
-        const imageHtml = item.image 
-          ? `<img src="http://localhost:5000/uploads/${item.image}" onclick="showImage('http://localhost:5000/uploads/${item.image}')"/>`
-          : "<div style='height:180px; display:flex; align-items:center; justify-content:center; background:#eee; border-radius:12px;'>No Image</div>";
-
-        container.innerHTML += `
-          <div class="card">
-            ${imageHtml}
-            <h3>${item.name}</h3>
-            <p>${item.description}</p>
-            <p><strong>Location:</strong> ${item.location}</p>
-            <p><strong>Date:</strong> ${item.dateLost ? new Date(item.dateLost).toLocaleDateString() : "N/A"}</p>
-            <span class="badge ${item.status}">${item.status}</span>
-            <p><em>Type: ${item.type}</em></p>
-          </div>`;
-      });
+      // My submissions
+      const myItems = items.filter(i => i.uploaderId === currentUserId);
+      const myContainer = document.getElementById("myList");
+      myContainer.innerHTML = myItems.length === 0
+        ? "<p>You have not submitted anything yet.</p>"
+        : myItems.map(renderItem).join("");
     }
 
-    document.getElementById("itemForm").addEventListener("submit", async function (e) {
+    function renderItem(item) {
+      return `
+        <div class="item-card">
+          ${item.image ? `<img src="http://localhost:5000/uploads/${item.image}" alt="${item.name}" />` : ""}
+          <h3>${item.name}</h3>
+          <p>${item.description}</p>
+          <small>${item.location}</small><br />
+          <span class="badge ${item.status}">${item.status}</span>
+        </div>
+      `;
+    }
+
+    document.getElementById("itemForm").addEventListener("submit", async function(e) {
       e.preventDefault();
       const formData = new FormData();
       formData.append("name", document.getElementById("itemName").value);
@@ -203,9 +241,12 @@
       formData.append("location", document.getElementById("itemLocation").value);
       formData.append("dateLost", document.getElementById("itemDateLost").value);
       formData.append("type", document.getElementById("itemType").value);
-      if (document.getElementById("itemImage").files.length > 0) {
-        formData.append("image", document.getElementById("itemImage").files[0]);
-      }
+
+      // Force pending for student submissions
+      formData.append("status", "pending");
+
+      const fileInput = document.getElementById("itemImage");
+      if (fileInput.files.length > 0) formData.append("image", fileInput.files[0]);
 
       const res = await fetch("http://localhost:5000/api/items", {
         method: "POST",
@@ -214,7 +255,8 @@
       });
 
       if (!res.ok) {
-        alert("❌ Failed to submit item.");
+        const err = await res.json();
+        document.getElementById("error").innerText = err.message || "Upload failed.";
         return;
       }
 
@@ -222,7 +264,10 @@
       fetchItems();
     });
 
-    fetchItems();
+    (async () => {
+      await getUserInfo();
+      await fetchItems();
+    })();
   </script>
 </body>
 </html>
