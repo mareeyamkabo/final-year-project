@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import API from "../services/api";
+import { Card, Form, Button, Alert, Image } from "react-bootstrap";
+import fudLogo from "../assets/fud logo.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -10,61 +12,79 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(""); // reset errors
     try {
       const res = await API.post("/auth/login", { email, password });
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("role", res.data.role);
-
-      if (res.data.role === "admin") {
-        navigate("/admin");
+      console.log("Login response:", res.data);
+  
+      const { token, user } = res.data;
+      if (!token || !user?.role) {
+        throw new Error("Invalid server response");
+      }
+  
+      localStorage.setItem("token", token);
+      localStorage.setItem("role", user.role);
+      localStorage.setItem("user", JSON.stringify(user));
+  
+      if (user.role === "admin") {
+        navigate("/admin", { replace: true });
       } else {
-        navigate("/student");
+        navigate("/student", { replace: true });
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
+      console.error("Login error:", err);
+      setError(err.response?.data?.message || err.message || "Login failed");
     }
   };
+  
+  
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="p-8 max-w-md w-full rounded-2xl bg-gray-100 dark:bg-gray-900 shadow-[8px_8px_16px_#c5c5c5,-8px_-8px_16px_#ffffff] dark:shadow-[8px_8px_16px_#0a0a0a,-8px_-8px_16px_#1e1e1e]">
-        <h1 className="text-2xl font-bold text-center mb-6 text-gray-800 dark:text-gray-200">
-          Login
-        </h1>
-        {error && (
-          <p className="text-red-500 text-center mb-3">{error}</p>
-        )}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 rounded-xl border-none shadow-inner dark:bg-gray-800 dark:text-gray-200 focus:outline-none"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 rounded-xl border-none shadow-inner dark:bg-gray-800 dark:text-gray-200 focus:outline-none"
-            required
-          />
-          <button
-            type="submit"
-            className="w-full py-3 rounded-xl bg-indigo-500 text-white font-semibold shadow-lg hover:bg-indigo-600 transition"
-          >
+    <div className="d-flex vh-100 justify-content-center align-items-center bg-light">
+      <Card style={{ width: "420px" }} className="shadow-lg rounded-4 p-4">
+        <div className="text-center mb-3">
+          <Image src={fudLogo} alt="FUD Logo" height={80} />
+          <h4 className="mt-3 fw-bold text-success">
+            Welcome to FUD Lost & Found
+          </h4>
+          <p className="text-muted small">Knowledge, Excellence & Service</p>
+        </div>
+
+        {error && <Alert variant="danger">{error}</Alert>}
+
+        <Form onSubmit={handleSubmit}>
+          <Form.Group className="mb-3" controlId="formEmail">
+            <Form.Control
+              type="email"
+              placeholder="Enter email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </Form.Group>
+
+          <Form.Group className="mb-3" controlId="formPassword">
+            <Form.Control
+              type="password"
+              placeholder="Enter password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </Form.Group>
+
+          <Button type="submit" variant="success" className="w-100 rounded-pill">
             Login
-          </button>
-        </form>
-        <p className="mt-4 text-center text-gray-600 dark:text-gray-400">
+          </Button>
+        </Form>
+
+        <p className="mt-3 text-center">
           Don’t have an account?{" "}
-          <Link to="/register" className="text-indigo-500 font-semibold">
+          <Link to="/register" className="fw-bold text-primary">
             Register
           </Link>
         </p>
-      </div>
+      </Card>
     </div>
   );
 }
