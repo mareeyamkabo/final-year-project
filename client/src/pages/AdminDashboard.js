@@ -11,8 +11,6 @@ import {
   FaMoon,
   FaSun,
   FaSearch,
-  FaEdit,
-  FaTrash,
 } from "react-icons/fa";
 import {
   PieChart,
@@ -61,7 +59,7 @@ export default function AdminDashboard() {
           headers: { Authorization: `Bearer ${token}` },
         });
         setItems(res.data);
-      } catch {
+      } catch (err) {
         setError("Failed to fetch items.");
       }
     };
@@ -121,7 +119,7 @@ export default function AdminDashboard() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setItems(res.data);
-    } catch {
+    } catch (err) {
       setError("Failed to save item.");
     }
   };
@@ -141,6 +139,29 @@ export default function AdminDashboard() {
     });
   };
 
+  const toggleStatus = async (item) => {
+    const next =
+      item.status === "pending"
+        ? "approved"
+        : item.status === "approved"
+        ? "resolved"
+        : "pending";
+
+    try {
+      await API.put(
+        `/items/${item.id}`,
+        { status: next },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const res = await API.get("/items", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setItems(res.data);
+    } catch (err) {
+      setError("Failed to update status.");
+    }
+  };
+
   const deleteItem = async (id) => {
     if (!window.confirm("Are you sure you want to delete this item?")) return;
     try {
@@ -151,7 +172,7 @@ export default function AdminDashboard() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setItems(res.data);
-    } catch {
+    } catch (err) {
       setError("Failed to delete item.");
     }
   };
@@ -190,7 +211,10 @@ export default function AdminDashboard() {
   return (
     <div className={`d-flex ${darkMode ? "bg-dark text-light" : "bg-light text-dark"}`} style={{ minHeight: "100vh" }}>
       {/* Sidebar */}
-      <div className={`p-3 shadow ${darkMode ? "bg-secondary" : "bg-white"}`} style={{ width: "240px" }}>
+      <div
+        className={`p-3 shadow ${darkMode ? "bg-secondary" : "bg-white"}`}
+        style={{ width: "240px" }}
+      >
         <h3 className="fw-bold mb-4">⚡ Admin</h3>
         <ul className="nav flex-column">
           <li className="nav-item mb-2">
@@ -221,9 +245,8 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <div className="flex-grow-1 p-4">
         {activeTab === "dashboard" && (
-          <>
+          <div>
             <h2 className="fw-bold mb-4">📊 Dashboard Overview</h2>
-            {/* Stats Cards */}
             <div className="row g-3 mb-4">
               <div className="col-md-3">
                 <div className="card shadow text-center p-3 bg-primary text-light">
@@ -250,6 +273,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
+
             {/* Charts */}
             <div className="row g-4">
               <div className="col-md-6">
@@ -261,7 +285,9 @@ export default function AdminDashboard() {
                         data={pieData}
                         cx="50%"
                         cy="50%"
+                        labelLine={false}
                         outerRadius={120}
+                        fill="#8884d8"
                         dataKey="value"
                         label
                       >
@@ -290,78 +316,156 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
-          </>
+          </div>
         )}
 
         {activeTab === "items" && (
-          <>
-            <h2 className="fw-bold mb-4">📦 All Items</h2>
+          <div>
+            <h2 className="fw-bold mb-4">📦 Manage Items</h2>
+            {/* Search */}
+            <div className="input-group mb-3">
+              <span className="input-group-text">
+                <FaSearch />
+              </span>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search items..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
             {/* Add/Edit Form */}
-            <form onSubmit={handleSubmit} className="card shadow p-3 mb-4">
+            <form onSubmit={handleSubmit} className="card p-3 mb-4 shadow-sm">
               <div className="row g-3">
                 <div className="col-md-6">
-                  <input type="text" name="name" className="form-control" placeholder="Item Name" value={formData.name} onChange={handleChange} required />
+                  <input
+                    type="text"
+                    name="name"
+                    placeholder="Item Name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="form-control"
+                    required
+                  />
                 </div>
                 <div className="col-md-6">
-                  <input type="text" name="location" className="form-control" placeholder="Location" value={formData.location} onChange={handleChange} required />
+                  <input
+                    type="text"
+                    name="location"
+                    placeholder="Location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    className="form-control"
+                    required
+                  />
                 </div>
-                <div className="col-md-6">
-                  <input type="date" name="dateLost" className="form-control" value={formData.dateLost} onChange={handleChange} required />
+                <div className="col-md-12">
+                  <textarea
+                    name="description"
+                    placeholder="Description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    className="form-control"
+                    required
+                  ></textarea>
                 </div>
-                <div className="col-md-6">
-                  <select name="type" className="form-control" value={formData.type} onChange={handleChange} required>
+                <div className="col-md-4">
+                  <input
+                    type="date"
+                    name="dateLost"
+                    value={formData.dateLost}
+                    onChange={handleChange}
+                    className="form-control"
+                    required
+                  />
+                </div>
+                <div className="col-md-4">
+                  <select
+                    name="type"
+                    value={formData.type}
+                    onChange={handleChange}
+                    className="form-control"
+                    required
+                  >
                     <option value="">Select Type</option>
                     <option value="missing">Missing</option>
                     <option value="found">Found</option>
                   </select>
                 </div>
-                <div className="col-12">
-                  <textarea name="description" className="form-control" placeholder="Description" value={formData.description} onChange={handleChange} required />
-                </div>
-                <div className="col-md-6">
-                  <select name="category" className="form-control" value={formData.category} onChange={handleChange}>
+                <div className="col-md-4">
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    className="form-control"
+                    required
+                  >
                     <option value="general">General</option>
                     <option value="electronics">Electronics</option>
                     <option value="clothing">Clothing</option>
-                    <option value="documents">Documents</option>
+                    <option value="books">Books</option>
+                    <option value="other">Other</option>
                   </select>
                 </div>
                 <div className="col-md-6">
-                  <input type="file" name="image" className="form-control" onChange={handleChange} />
+                  <input
+                    type="file"
+                    name="image"
+                    onChange={handleChange}
+                    className="form-control"
+                  />
+                </div>
+                <div className="col-md-6">
+                  <button type="submit" className="btn btn-success w-100">
+                    {editMode ? "Update Item" : "Add Item"}
+                  </button>
                 </div>
               </div>
-              <button type="submit" className="btn btn-primary mt-3">
-                {editMode ? "Update Item" : "Add Item"}
-              </button>
             </form>
 
-            {/* Search */}
-            <div className="input-group mb-3">
-              <span className="input-group-text"><FaSearch /></span>
-              <input type="text" className="form-control" placeholder="Search items..." value={search} onChange={(e) => setSearch(e.target.value)} />
-            </div>
-
             {/* Items Table */}
-            <ItemsTable items={filteredItems} onEdit={loadEdit} onDelete={deleteItem} />
-          </>
+            <ItemsTable
+              items={filteredItems}
+              onEdit={loadEdit}
+              onDelete={deleteItem}
+              onToggleStatus={toggleStatus}
+            />
+          </div>
         )}
 
         {activeTab === "categories" && (
-          <>
+          <div>
             <h2 className="fw-bold mb-4">📁 Categories</h2>
             {categories.map((cat) => (
               <div key={cat} className="mb-4">
                 <h5 className="text-capitalize">{cat}</h5>
                 <ItemsTable
                   items={items.filter((i) => (i.category || "general") === cat)}
-                  onEdit={loadEdit}
-                  onDelete={deleteItem}
+                  readOnly={true}
                 />
               </div>
             ))}
-          </>
+          </div>
         )}
       </div>
+
+      {/* Image Preview */}
+      {previewImage && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex align-items-center justify-content-center"
+          style={{ zIndex: 9999 }}
+          onClick={() => setPreviewImage(null)}
+        >
+          <img
+            src={`http://localhost:5000/uploads/${previewImage}`}
+            alt="Full"
+            className="img-fluid rounded"
+            style={{ maxHeight: "90vh" }}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -7,23 +7,23 @@ require("dotenv").config();
 const app = express();
 
 app.use(cors({
-  origin: ["http://localhost:3000", "http://127.0.0.1:5500"], // ✅ Allow React & old HTML
+  origin: ["http://localhost:3000", "http://127.0.0.1:5500"],
   credentials: true,
 }));
 
 app.use(express.json());
-
-// ✅ Serve static uploads
 app.use("/uploads", express.static("uploads"));
 
-// ✅ Routes
-const authRoutes = require("./routes/authRoutes");
-const itemRoutes = require("./routes/itemRoutes");
+// Routes
+app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/items", require("./routes/itemRoutes"));
+app.use("/api/claims", require("./routes/claimRoutes")); 
 
-app.use("/api/auth", authRoutes);
-app.use("/api/items", itemRoutes);
+const claimRoutes = require("./routes/claimRoutes");
+app.use("/api/claims", claimRoutes);
 
-// ✅ Start server
+
+// Start server
 const PORT = process.env.PORT || 5000;
 sequelize.sync().then(() => {
   app.listen(PORT, () =>

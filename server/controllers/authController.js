@@ -3,14 +3,35 @@ const { User } = require("../models");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+// server/controllers/authController.js
 exports.register = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, nin } = req.body;
   try {
+    // Validate name (no numbers)
+    if (!/^[A-Za-z\s]+$/.test(name)) {
+      return res.status(400).json({ message: "Name must contain only letters" });
+    }
+
+    // Email check
     const exist = await User.findOne({ where: { email } });
     if (exist) return res.status(400).json({ message: "Email already exists" });
 
+    // NIN check (ignore "0")
+    if (nin && nin !== "0") {
+      const ninExist = await User.findOne({ where: { nin } });
+      if (ninExist) {
+        return res.status(400).json({ message: "NIN already registered" });
+      }
+    }
+
     const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: hashed, role: "student" });
+    const user = await User.create({
+      name,
+      email,
+      password: hashed,
+      nin,
+      role: "student",
+    });
 
     res.status(201).json({ message: "Student registered", user });
   } catch (err) {
@@ -18,6 +39,7 @@ exports.register = async (req, res) => {
     res.status(500).json({ message: "Error registering student" });
   }
 };
+
 
 // Login admin or student
 exports.login = async (req, res) => {
