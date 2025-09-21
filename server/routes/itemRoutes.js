@@ -8,6 +8,8 @@ const { verifyToken, isAdmin } = require("../middleware/authMiddleware");
 // Public routes
 router.get("/", itemController.getAllItems);
 
+router.get("/search", itemController.searchItems);
+
 // Protected routes
 router.post("/", verifyToken, upload.single("image"), itemController.createItem);
 router.put("/:id", verifyToken, isAdmin, upload.single("image"), itemController.updateItem);

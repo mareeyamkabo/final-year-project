@@ -9,7 +9,12 @@ module.exports = (sequelize) => {
     dateLost: { type: DataTypes.DATE, allowNull: false },
     type: { type: DataTypes.STRING, allowNull: false },
     status: { type: DataTypes.STRING, defaultValue: "pending" },
-    image: { type: DataTypes.STRING, allowNull: true }, // image upload
+    image: { type: DataTypes.STRING, allowNull: true },
+    category: { 
+      type: DataTypes.STRING, 
+      allowNull: false, 
+      defaultValue: "general"   //  Default for old records
+    },
   });
 
   return Item;
